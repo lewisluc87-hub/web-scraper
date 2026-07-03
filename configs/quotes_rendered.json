@@ -1,0 +1,14 @@
+{
+  "base_url": "https://quotes.toscrape.com/js/",
+  "item_selector": "div.quote",
+  "fields": [
+    {"name": "text", "selector": "span.text"},
+    {"name": "author", "selector": "small.author"},
+    {"name": "tags", "selector": "div.tags a.tag", "multiple": true}
+  ],
+  "fetch_mode": "rendered",
+  "wait_selector": "div.quote",
+  "next_page_selector": "li.next a",
+  "max_pages": 3,
+  "delay_seconds": 1.5
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "TEMPLATE — not a live target. Copy this and fill in real selectors for a client's product listing page. Use your browser's DevTools (right-click an element > Inspect) to find the actual class names.",
+  "base_url": "https://example-shop.com/category/products/",
+  "item_selector": "li.product",
+  "fields": [
+    {"name": "title", "selector": ".product-title"},
+    {"name": "price", "selector": ".price"},
+    {"name": "in_stock", "selector": ".stock-status"},
+    {"name": "product_url", "selector": "a.product-link", "attr": "href"},
+    {"name": "image_url", "selector": "img", "attr": "src"}
+  ],
+  "fetch_mode": "rendered",
+  "wait_selector": ".product",
+  "next_page_selector": "a.next-page",
+  "max_pages": 5,
+  "delay_seconds": 2.0
+}
