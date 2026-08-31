@@ -6,3 +6,5 @@ venv/
 *.json
 !configs/*.json
 .pytest_cache/
+monitor.log
+snapshots/

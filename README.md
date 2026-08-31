@@ -101,6 +101,71 @@ python -m scraper.cli --config configs/quotes_rendered.json --output test_js.csv
 # then check test_js.csv — should have 10 rows, confirming JS-rendered content was captured
 ```
 
+## Scheduled monitoring
+
+`scraper.monitor` wraps the existing `scrape()` engine with three things
+a one-off script doesn't have: history, diffing, and alerting.
+
+```
+python -m scraper.monitor --config configs/quotes_static.json --run-once
+```
+
+Each run:
+1. Scrapes normally (same config format, same engine).
+2. Loads the most recent previous snapshot (if any).
+3. Diffs current vs. previous, classifying every item as **added**,
+   **removed**, or **changed** (with the specific changed fields named).
+4. Appends a human-readable summary to a log file.
+5. Optionally POSTs a JSON payload to a webhook URL if anything changed.
+6. Saves the current results as the new "most recent" snapshot.
+
+### Identifying "the same item" across runs
+
+Pass `--key-field url` (or whichever field is a stable, unique identifier
+in your config, e.g. a product URL). Without a natural unique field, it
+falls back to hashing each item's content — this still catches new/removed
+items correctly, but a genuinely *changed* item will show up as one
+removal + one addition instead of a "changed" entry, since there's no
+stable anchor to match old and new against. Setting `--key-field` when a
+suitable field exists is strongly recommended.
+
+### Flags
+
+| Flag | Effect |
+|---|---|
+| `--snapshot-dir DIR` | Where historical snapshots are stored (default: `snapshots/`) |
+| `--log-file PATH` | Where diff reports are appended (default: `monitor.log`) |
+| `--webhook-url URL` | Optional: POST a JSON alert here when something changes |
+| `--key-field NAME` | Field used to match items across runs |
+| `--interval SECONDS` | Loop in-process, sleeping between runs (demo/local use) |
+| `--run-once` | Run one cycle and exit (default; this is what a cron job should call) |
+
+### Deployment model
+
+This does **not** implement its own production scheduler. `--run-once`
+(the default) does one scrape-diff-alert cycle and exits — that's what a
+real cron job, Windows Task Scheduler task, or systemd timer should
+invoke on a schedule. `--interval` is a convenience loop for demos and
+local testing, not the intended production deployment mechanism.
+
+### Verified
+
+- 16 offline unit tests (`python tests/test_monitor.py`) covering key
+  matching (including the fallback-hash tradeoff, explicitly locked in by
+  a test), diff classification (added/removed/changed/unchanged), snapshot
+  save/load round-tripping, and picking the most recent of several
+  snapshots.
+- Webhook delivery is tested against a **real local HTTP server**, not a
+  mock — confirms the actual JSON payload structure delivered over a real
+  HTTP POST, and separately confirms a failed/unreachable webhook doesn't
+  crash the monitor run.
+- Full pipeline verified against two real HTML snapshots representing a
+  genuine day-1-to-day-2 change (one quote removed, one edited in place,
+  one added, one left untouched) run through the actual `parse_page()` →
+  `diff_results()` → `format_diff_report()` pipeline — correctly produced
+  `+1 added, -1 removed, ~1 changed (tags), 1 unchanged`, exactly matching
+  the real edit made.
+
 ## Known limitations (v1)
 
 - No login/authentication support
