@@ -1,5 +1,7 @@
 # Configurable web scraper
 
+[![CI](https://github.com/lewisluc87-hub/web-scraper/actions/workflows/ci.yml/badge.svg)](https://github.com/lewisluc87-hub/web-scraper/actions/workflows/ci.yml)
+
 A CLI tool that scrapes listing-style pages (product listings, quotes, job posts,
 articles — anything repeated on a page) into CSV or JSON. Works on both static
 HTML sites and JavaScript-rendered sites, and adapts to any target site by
