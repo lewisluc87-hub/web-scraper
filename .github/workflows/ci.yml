@@ -24,3 +24,6 @@ jobs:
 
       - name: Run monitor tests (offline, no network)
         run: python tests/test_monitor.py
+
+      - name: Run MCP server tests (real local HTTP server, no outbound network)
+        run: python tests/test_mcp_server.py
