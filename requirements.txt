@@ -1,3 +1,9 @@
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 playwright>=1.40.0
+
+# Pinned exactly, unlike the rest of this file: mcp has broken its own
+# public API across majors before (FastMCP -> MCPServer rename in 2.x --
+# see mcp_server.py), so an unpinned install here risks silently breaking
+# on the next major release rather than failing loudly and predictably.
+mcp==2.2.0
