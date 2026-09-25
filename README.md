@@ -168,6 +168,74 @@ local testing, not the intended production deployment mechanism.
   `+1 added, -1 removed, ~1 changed (tags), 1 unchanged`, exactly matching
   the real edit made.
 
+## MCP server
+
+`mcp_server.py` exposes this scraper as an MCP server, so any MCP client
+(Claude Desktop, etc.) can run scrape jobs directly. It wraps
+`scraper.core`/`scraper.cli`/`scraper.monitor` rather than
+reimplementing them — a fix to the parsing or diff logic applies here
+automatically.
+
+**Deliberately restricted, not a general-purpose web-fetch tool:** no
+tool accepts an arbitrary URL or arbitrary CSS selectors from the
+caller. Every tool that fetches anything takes a `config_name` resolved
+only against configs already committed to `configs/` — this bounds what
+a client can make the server do to "the sites this repo already decided
+to scrape," not an open-ended fetcher a client (or anything able to
+influence its tool-call arguments) could point at arbitrary sites.
+
+**Tools exposed:**
+- `list_configs()` — lists the configs in `configs/` (name, base URL,
+  fetch mode).
+- `scrape(config_name, max_pages=None)` — runs a named config and
+  returns the extracted items as JSON. Rejects anything that isn't a
+  real file already in `configs/`, including path-traversal attempts.
+- `check_for_changes(config_name, key_field=None)` — scrapes now and
+  diffs against the last snapshot saved by the CLI monitor, **without
+  saving a new snapshot**. This is deliberately read-only: persisting
+  here would mean an MCP call could silently advance the same baseline
+  `scraper.monitor`'s own scheduled runs depend on, corrupting whichever
+  one runs next. To actually advance the baseline, run the CLI monitor
+  directly (`python -m scraper.monitor --config configs/<name>.json
+  --run-once`).
+
+**Run it** (stdio transport, what Claude Desktop expects):
+```bash
+python mcp_server.py
+```
+
+**Claude Desktop config** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "web-scraper": {
+      "command": "python",
+      "args": ["/absolute/path/to/web-scraper/mcp_server.py"]
+    }
+  }
+}
+```
+
+### Verified
+
+- A real client (the `mcp` SDK's own `ClientSession`) driving the actual
+  server as a subprocess over real stdio confirmed: all three tools are
+  listed correctly; `list_configs()` reports this repo's real configs;
+  `scrape()` correctly rejects an unknown config name and a
+  path-traversal attempt; `check_for_changes()` correctly reports "no
+  snapshot yet" on a fresh config.
+- `scrape()` tested against a **real local HTTP server** (not a mock)
+  serving the same `fixtures/quotes_page1.html` `test_parser.py` already
+  uses — a real HTTP GET, real HTML parse, real MCP tool response,
+  matching this repo's own established "real local server, not mocks"
+  testing philosophy (see the webhook test above) rather than
+  introducing a different standard for this one file.
+- `check_for_changes()`'s read-only property directly verified, not just
+  assumed from reading the code: pre-seeded a fake previous snapshot,
+  called the tool (got a correct `+1 added, 2 unchanged` diff against
+  the real scrape), then confirmed the snapshot folder still contained
+  exactly the one pre-seeded file — no new snapshot had been written.
+
 ## Known limitations (v1)
 
 - No login/authentication support
